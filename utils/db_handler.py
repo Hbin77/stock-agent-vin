@@ -30,3 +30,31 @@ def load_stock_data(ticker):
         finally:
             conn.close()
     return pd.DataFrame()
+def load_news_data(ticker):
+    """특정 티커의 전체 뉴스 데이터를 DataFrame으로 로드합니다."""
+    print(f"🗄️ 데이터베이스에서 '{ticker}' 뉴스 데이터를 로드합니다...")
+    conn = get_db_connection()
+    if conn:
+        try:
+            # 뉴스를 날짜별로 그룹화하여 평균 감성 점수를 계산
+            sql = f"""
+            SELECT
+                DATE(published_at AT TIME ZONE 'UTC') AS date,
+                AVG(sentiment_score) AS avg_sentiment_score,
+                COUNT(*) AS news_count
+            FROM stock_news
+            WHERE ticker = '{ticker}' AND sentiment_score IS NOT NULL
+            GROUP BY DATE(published_at AT TIME ZONE 'UTC')
+            ORDER BY date;
+            """
+            df = pd.read_sql(sql, conn, index_col='date')
+            # 인덱스 타입을 datetime으로 변경하여 나중에 주가 데이터와 병합할 수 있도록 함
+            df.index = pd.to_datetime(df.index)
+            print(f"✅ '{ticker}' 뉴스 데이터 로드 및 집계 완료: {len(df)}개 날짜")
+            return df
+        except Exception as e:
+            print(f"❌ 뉴스 데이터 로드 중 오류 발생: {e}")
+            return pd.DataFrame()
+        finally:
+            conn.close()
+    return pd.DataFrame()

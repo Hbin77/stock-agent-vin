@@ -10,9 +10,10 @@ def add_features_and_target(df):
     df.ta.rsi(length=14, append=True)
     df.ta.macd(fast=12, slow=26, append=True)
     df.ta.bbands(length=20, append=True)
-    df.ta.stoch(k=14, d=3, append=True)
     df.ta.atr(length=14, append=True)
     df.ta.obv(append=True)
+    df['OBV_MA5'] = df['OBV'].rolling(window=5).mean()
+    df['OBV_MA10'] = df['OBV'].rolling(window=10).mean()
     
     # 2. 모든 날에 대해 '메타 라벨' 타겟 생성
     look_forward_period = 10

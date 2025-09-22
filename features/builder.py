@@ -24,6 +24,11 @@ def add_features_and_target(df):
     df.ta.obv(append=True)
     df['OBV_MA10'] = df['OBV'].rolling(window=10).mean()
     
+    # ▼▼▼ [수정된 부분] ATR, Stochastic Oscillator 지표 추가 ▼▼▼
+    df.ta.atr(length=14, append=True) # ATR 추가
+    df.ta.stoch(k=14, d=3, append=True) # Stochastic Oscillator 추가
+    # ▲▲▲ [수정된 부분] ▲▲▲
+
     # 2. 타겟 변수 생성 (기존과 동일)
     look_forward_period = 10
     target_return = 0.05
@@ -44,11 +49,15 @@ def add_features_and_target(df):
     df.dropna(inplace=True)
     
     # 3. 데이터 정규화
-    # LSTM은 0~1 사이의 값에 민감하므로 정규화가 필수적입니다.
-    features_to_scale = ['close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10']
+    # ▼▼▼ [수정된 부분] 새로 추가된 피처를 정규화 대상에 포함 ▼▼▼
+    features_to_scale = [
+        'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 
+        'OBV', 'OBV_MA10', 'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3'
+    ]
+    # ▲▲▲ [수정된 부분] ▲▲▲
+    
     scaler = MinMaxScaler(feature_range=(0, 1))
     df[features_to_scale] = scaler.fit_transform(df[features_to_scale])
     
     print("✅ 피처 엔지니어링 및 데이터 전처리 완료!")
-    # 정규화에 사용된 scaler 객체도 함께 반환해야 나중에 예측값을 원래 스케일로 되돌릴 수 있습니다.
     return df, scaler

@@ -47,4 +47,4 @@ def run_system_for_ticker(ticker):
     backtester.run_backtest(test_period_df, y_pred)
 
 if __name__ == "__main__":
-    run_system_for_ticker('TSLA')
+    run_system_for_ticker('NFLX')  # Microsoft 예시

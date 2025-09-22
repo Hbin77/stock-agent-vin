@@ -1,17 +1,35 @@
 # models/trainer.py
 import numpy as np
 import pandas as pd 
+import os
+import random
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from sklearn.metrics import accuracy_score, classification_report
 from imblearn.over_sampling import SMOTE
 from features.builder import create_lstm_dataset
 
+seed_value = 42
+os.environ['PYTHONHASHSEED'] = str(seed_value)
+random.seed(seed_value)
+np.random.seed(seed_value)
+tf.random.set_seed(seed_value)
+# ▲▲▲ [수정된 부분] ▲▲▲
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+
 def train_and_evaluate(df):
     """SMOTE를 적용하여 LSTM 딥러닝 모델을 생성, 학습하고 평가합니다."""
     print("\n🧠 LSTM 딥러닝 모델 학습을 시작합니다 (SMOTE 적용)...")
     
-    features = ['close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10']
+    # ▼▼▼ [수정된 부분] 학습에 사용할 피처 목록에 새로운 지표 추가 ▼▼▼
+    features = [
+        'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10',
+        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3'
+    ]
+    # ▲▲▲ [수정된 부분] ▲▲▲
     target = 'target'
 
     X = df[features]
@@ -40,7 +58,6 @@ def train_and_evaluate(df):
     # 다시 LSTM 입력 형태(3D)로 복원
     X_train_resampled = X_train_resampled.reshape((X_train_resampled.shape[0], nx, ny))
     
-    # [수정된 부분] LSTM 모델 아키텍처 명시
     model = Sequential([
         LSTM(units=50, return_sequences=True, input_shape=(X_train_resampled.shape[1], X_train_resampled.shape[2])),
         Dropout(0.2),

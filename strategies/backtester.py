@@ -7,8 +7,7 @@ def run_backtest(df_test_period, predictions):
     """AI의 예측에만 기반하여 백테스팅을 수행합니다."""
     print("\n📈 AI 예측 기반 전략 백테스팅을 시작합니다...")
     
-    # 예측값을 인덱스로 사용하기 쉽게 Pandas Series로 변환
-    predictions_series = pd.Series(predictions, index=df_test_period.index)
+    predictions_series = pd.Series(predictions.flatten(), index=df_test_period.index)
     
     initial_cash = 10000
     cash = initial_cash
@@ -16,12 +15,10 @@ def run_backtest(df_test_period, predictions):
     portfolio_values = []
 
     for date, row in df_test_period.iterrows():
-        # AI가 '성공(1)'을 예측하고, 현재 주식을 보유하고 있지 않다면 매수
         if date in predictions_series.index and predictions_series.loc[date] == 1 and shares == 0:
             shares_to_buy = cash / row['open']
             shares += shares_to_buy
             cash = 0
-        # AI가 '실패(0)'를 예측하고, 현재 주식을 보유하고 있다면 매도
         elif date in predictions_series.index and predictions_series.loc[date] == 0 and shares > 0:
             cash += shares * row['open']
             shares = 0

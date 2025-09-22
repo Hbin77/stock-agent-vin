@@ -20,30 +20,30 @@ def plot_feature_importance(model, feature_names):
     plt.show()
 
 def run_system_for_ticker(ticker):
-    """특정 티커에 대해 데이터 로드부터 백테스팅까지 전체 시스템을 실행합니다."""
+    """LSTM 기반 최종 시스템을 실행합니다."""
     stock_df = db_handler.load_stock_data(ticker)
-    news_df = db_handler.load_news_data(ticker)
     if stock_df.empty: return
-
-    # builder는 이제 하나의 완성된 DataFrame만 반환합니다.
-    features_df = builder.add_features_and_target(stock_df, news_df)    
-    # trainer는 이 features_df로 바로 학습합니다.
+    
+    # builder는 이제 정규화된 df와 scaler를 반환
+    features_df, scaler = builder.add_features_and_target(stock_df.copy())
+    
+    # trainer는 이 features_df로 학습
     training_results = trainer.train_and_evaluate(features_df)
     if training_results[0] is None:
-        print("\n❌ 모델 학습에 실패했거나 데이터가 부족하여 백테스팅을 중단합니다.")
+        print("\n❌ 모델 학습에 실패하여 백테스팅을 중단합니다.")
         return
     
-    model, X_test, y_test, y_pred, accuracy, report, feature_names = training_results
+    model, test_indices, y_test, y_pred, accuracy, report, feature_names = training_results
     
-    print(f"\n--- {ticker} 모델 학습 결과 ---")
+    print(f"\n--- {ticker} LSTM 모델 학습 결과 ---")
     print(f"정확도: {accuracy:.2%}")
     print(report)
     
-    plot_feature_importance(model, feature_names)
+    # 피처 중요도는 딥러닝 모델에서 직접적으로 구하기 어려우므로 주석 처리
+    # plot_feature_importance(model, feature_names)
 
-    # 백테스팅은 X_test 기간에 해당하는 원본 데이터(features_df)를 사용합니다.
-    test_period_df = features_df.loc[X_test.index]
-    # backtester 호출 방식을 수정하여 y_pred를 직접 전달합니다.
+    # 백테스팅은 테스트 기간 인덱스에 해당하는 원본 데이터 사용
+    test_period_df = stock_df.loc[test_indices]
     backtester.run_backtest(test_period_df, y_pred)
 
 if __name__ == "__main__":

@@ -5,12 +5,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # --- 1. 시스템의 모든 구성요소들을 불러옵니다. ---
+from models import lstm_trainer
 from utils import db_handler
 from features import builder
 from data import economic_collector
 
 # models 폴더에서 각 전문가(trainer)들을 모두 불러옵니다.
-from models import lstm_trainer, gru_trainer, lgbm_trainer 
+from models import lstm_trainer, gru_trainer 
 
 from strategies import backtester
 
@@ -32,7 +33,7 @@ def run_ensemble_system_for_ticker(ticker):
     # 각 모델로부터 전체 기간에 대한 예측 결과를 받습니다.
     lstm_predictions = lstm_trainer.train_and_evaluate(features_df)
     gru_predictions = gru_trainer.train_and_evaluate(features_df)
-    _, _, _, lgbm_predictions = lgbm_trainer.train_and_evaluate(features_df) # lgbm은 결과 4개를 반환
+    _, _, _, lgbm_predictions = lstm_trainer.train_and_evaluate(features_df) # lgbm은 결과 4개를 반환
 
     # 모델 중 하나라도 학습에 실패하면 시스템을 중단합니다.
     if lstm_predictions is None or gru_predictions is None or lgbm_predictions is None:

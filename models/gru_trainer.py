@@ -6,8 +6,7 @@ import os
 import random
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import GRU, Dense, Dropout  # LSTM 대신 GRU를 임포트
-from sklearn.metrics import accuracy_score, classification_report
+from tensorflow.keras.layers import GRU, Dense, Dropout
 from imblearn.over_sampling import SMOTE
 from features.builder import create_lstm_dataset
 
@@ -19,7 +18,7 @@ np.random.seed(seed_value)
 tf.random.set_seed(seed_value)
 
 def train_and_evaluate(df):
-    """SMOTE를 적용하여 GRU 딥러닝 모델을 생성, 학습하고 평가합니다."""
+    """SMOTE를 적용하여 GRU 딥러닝 모델을 생성, 학습하고 최종 예측 결과를 반환합니다."""
     print("\n🧠 GRU 딥러닝 모델 학습을 시작합니다 (SMOTE 적용)...")
     
     features = [
@@ -37,8 +36,11 @@ def train_and_evaluate(df):
     X_seq, y_seq = create_lstm_dataset(X, y, time_steps)
     
     if len(X_seq) == 0:
-        print("⚠️ 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
-        return None, None, None, None
+        print("⚠️ GRU: 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
+        # ▼▼▼ [수정된 부분] ▼▼▼
+        # 실패 시에도 main.py와 형식을 맞추기 위해 None 하나만 반환
+        return None
+        # ▲▲▲ [수정된 부분] ▲▲▲
 
     split_index = int(len(X_seq) * 0.8)
     X_train, X_test = X_seq[:split_index], X_seq[split_index:]
@@ -52,7 +54,6 @@ def train_and_evaluate(df):
     X_train_resampled = X_train_resampled.reshape((X_train_resampled.shape[0], nx, ny))
     
     model = Sequential([
-        # LSTM 레이어를 GRU 레이어로 변경
         GRU(units=50, return_sequences=True, input_shape=(X_train_resampled.shape[1], X_train_resampled.shape[2])),
         Dropout(0.2),
         GRU(units=50, return_sequences=False),
@@ -62,21 +63,13 @@ def train_and_evaluate(df):
     ])
     
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    
     model.fit(X_train_resampled, y_train_resampled, epochs=25, batch_size=32, validation_data=(X_test, y_test), verbose=0)
     
-    y_pred_proba = model.predict(X_test)
-    y_pred = (y_pred_proba > 0.5).astype(int)
+    print("✅ GRU 모델 학습 완료!")
     
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, target_names=['Fail', 'Success'], zero_division=0)
-    
-    print("✅ GRU 모델 학습 및 평가 완료!")
-    
-    # 백테스팅에 사용할 수 있도록 전체 시퀀스 데이터에 대한 예측을 반환
     full_pred_proba = model.predict(X_seq)
-    full_predictions = (full_pred_proba > 0.5).astype(int)
+    full_predictions = (full_pred_proba > 0.5).astype(int).flatten()
     
-    # 예측 결과는 시퀀스 길이만큼 앞부분이 비게 되므로, 이를 맞춰주기 위해 패딩 추가
-    padding = np.array([0] * (len(df) - len(full_predictions)))
-    return pd.Series(np.concatenate([padding, full_predictions.flatten()]), index=df.index)
+    padding = np.full(len(df) - len(full_predictions), np.nan)
+    
+    return pd.Series(np.concatenate([padding, full_predictions]), index=df.index)

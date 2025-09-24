@@ -1,11 +1,6 @@
 # main.py (Deadlock Fixed Final Version)
 
 import os
-# ▼▼▼ [수정된 부분] ▼▼▼
-# Mac에서 발생하는 transformers 라이브러리의 교착상태(deadlock)를 방지하는 코드입니다.
-# 다른 어떤 코드보다도 가장 먼저 실행되어야 합니다.
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-# ▲▲▲ [수정된 부분] ▲▲▲
 
 import pandas as pd
 import numpy as np
@@ -15,8 +10,11 @@ import matplotlib.pyplot as plt
 from utils import db_handler, screener
 from features import builder
 from data import economic_collector, collector
-from models import lstm_trainer, gru_trainer, lgbm_trainer 
 from strategies import backtester
+# models 임포트는 지연 로딩
+
+def run_ensemble_system_for_ticker(ticker):
+    from models import lstm_trainer, gru_trainer, lgbm_trainer
 
 def run_ensemble_system_for_ticker(ticker):
     """3개의 모델을 사용한 앙상블 시스템을 실행합니다."""

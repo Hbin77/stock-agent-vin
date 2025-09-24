@@ -1,4 +1,4 @@
-# models/lgbm_trainer.py (Final Version)
+# models/lgbm_trainer.py
 
 import lightgbm as lgb
 import pandas as pd
@@ -22,16 +22,23 @@ def train_and_evaluate(df):
 
     if X.empty or y.empty:
         print("⚠️ LightGBM 학습을 위한 데이터가 부족합니다.")
+        # ▼▼▼ [수정된 부분] ▼▼▼
         return None
+        # ▲▲▲ [수정된 부분] ▲▲▲
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
     
-    smote = SMOTE(random_state=42)
-    X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
-    
-    lgb_clf = lgb.LGBMClassifier(random_state=42, verbosity=-1) # 로그 출력을 끔
+    # 데이터가 적을 경우 SMOTE가 오류를 일으킬 수 있으므로 예외 처리 추가
+    try:
+        smote = SMOTE(random_state=42)
+        X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)
+    except ValueError:
+        print("⚠️ 데이터 수가 적어 SMOTE를 적용할 수 없습니다. 원본 데이터로 학습합니다.")
+        X_train_resampled, y_train_resampled = X_train, y_train
+
+    lgb_clf = lgb.LGBMClassifier(random_state=42, verbosity=-1)
     lgb_clf.fit(X_train_resampled, y_train_resampled)
     
     print("✅ LightGBM 모델 학습 완료!")

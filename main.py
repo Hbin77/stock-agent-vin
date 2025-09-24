@@ -1,13 +1,5 @@
-# main.py (GUI-Free, Deadlock-Free Final Version)
-
+# main.py
 import os
-
-# ▼▼▼ [최종 수정] macOS 교착상태 방지를 위한 환경 변수 설정 ▼▼▼
-# 다른 어떤 코드보다도 가장 먼저 실행되어야 합니다.
-os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
-os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-# ▲▲▲ [최종 수정] ▲▲▲
 
 import pandas as pd
 import numpy as np

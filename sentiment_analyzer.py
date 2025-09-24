@@ -1,13 +1,16 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from utils import db_handler
+# from utils import db_handler # 이 라인을 삭제하거나 주석 처리합니다.
 
 def analyze_and_update_sentiment():
     """DB에서 감성 점수가 없는 뉴스를 가져와 점수를 계산하고 업데이트합니다."""
+    
+    # 순환 참조 오류를 해결하기 위해 함수 내에서 db_handler를 임포트합니다.
+    from utils import db_handler
+    
     print("\n🎭 감성 분석을 시작합니다...")
     
     # 1. 사전 학습된 FinBERT 모델 및 토크나이저 로드
-    # 이 과정은 처음 실행 시 모델 파일을 다운로드하므로 시간이 걸릴 수 있습니다.
     print("FinBERT 모델을 로드합니다...")
     tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
     model = AutoModelForSequenceClassification.from_pretrained("ProsusAI/finbert")
@@ -16,6 +19,11 @@ def analyze_and_update_sentiment():
     conn = None
     try:
         conn = db_handler.get_db_connection()
+        if conn is None:
+             # db_handler.py에서 연결 실패 시 None을 반환하므로, 여기서 처리가 필요합니다.
+             print("❌ DB 연결 실패로 감성 분석을 중단합니다.")
+             return
+
         with conn.cursor() as cursor:
             # 2. 아직 감성 분석이 수행되지 않은 뉴스만 선택
             cursor.execute("SELECT id, title FROM stock_news WHERE sentiment_score IS NULL")
@@ -33,11 +41,7 @@ def analyze_and_update_sentiment():
                 with torch.no_grad():
                     outputs = model(**inputs)
                 
-                # 소프트맥스 함수를 적용하여 확률로 변환
                 probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
-                
-                # 점수 계산: (긍정 확률 - 부정 확률)
-                # 결과는 -1(매우 부정적) ~ +1(매우 긍정적) 사이의 값이 됨
                 sentiment_score = probs[0][1].item() - probs[0][0].item()
                 
                 # 4. 계산된 점수를 DB에 업데이트

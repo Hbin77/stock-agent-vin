@@ -23,7 +23,8 @@ def train_and_evaluate(df):
     
     features = [
         'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10',
-        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw'
+        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw',
+        'sentiment_avg', 'sentiment_ma5', 'market_regime' # 신규 피처 추가
     ]
     target = 'target'
     
@@ -37,10 +38,7 @@ def train_and_evaluate(df):
     
     if len(X_seq) == 0:
         print("⚠️ GRU: 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
-        # ▼▼▼ [수정된 부분] ▼▼▼
-        # 실패 시에도 main.py와 형식을 맞추기 위해 None 하나만 반환
         return None
-        # ▲▲▲ [수정된 부분] ▲▲▲
 
     split_index = int(len(X_seq) * 0.8)
     X_train, X_test = X_seq[:split_index], X_seq[split_index:]

@@ -11,7 +11,8 @@ def train_and_evaluate(df):
     
     features = [
         'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10',
-        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw'
+        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw',
+        'sentiment_avg', 'sentiment_ma5', 'market_regime' # 신규 피처 추가
     ]
     target = 'target'
     
@@ -22,15 +23,12 @@ def train_and_evaluate(df):
 
     if X.empty or y.empty:
         print("⚠️ LightGBM 학습을 위한 데이터가 부족합니다.")
-        # ▼▼▼ [수정된 부분] ▼▼▼
         return None
-        # ▲▲▲ [수정된 부분] ▲▲▲
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
     
-    # 데이터가 적을 경우 SMOTE가 오류를 일으킬 수 있으므로 예외 처리 추가
     try:
         smote = SMOTE(random_state=42)
         X_train_resampled, y_train_resampled = smote.fit_resample(X_train, y_train)

@@ -36,7 +36,7 @@ def train_and_evaluate(df):
     X_seq, y_seq = create_lstm_dataset(X, y, time_steps)
     
     if len(X_seq) == 0:
-        print("⚠️ 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
+        print("⚠️ LSTM: 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
         return None
 
     split_index = int(len(X_seq) * 0.8)
@@ -64,12 +64,9 @@ def train_and_evaluate(df):
     
     print("✅ LSTM 모델 학습 완료!")
     
-    # 백테스팅에 사용할 수 있도록 전체 기간에 대한 예측을 생성
     full_pred_proba = model.predict(X_seq)
-    full_predictions = (full_pred_proba > 0.5).astype(int)
+    full_predictions = (full_pred_proba > 0.5).astype(int).flatten()
     
-    # 예측 결과는 시퀀스 길이(60일)만큼 앞부분이 비게 되므로, 이를 원본 데이터프레임 길이에 맞게 패딩 추가
-    padding = np.array([np.nan] * (len(df) - len(full_predictions)))
+    padding = np.full(len(df) - len(full_predictions), np.nan)
     
-    # 최종적으로 예측 결과(Series)만 반환
-    return pd.Series(np.concatenate([padding, full_predictions.flatten()]), index=df.index)
+    return pd.Series(np.concatenate([padding, full_predictions]), index=df.index)

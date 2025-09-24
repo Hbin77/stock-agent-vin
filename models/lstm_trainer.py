@@ -23,7 +23,8 @@ def train_and_evaluate(df):
     
     features = [
         'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10',
-        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw'
+        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw',
+        'sentiment_avg', 'sentiment_ma5', 'market_regime' # 신규 피처 추가
     ]
     target = 'target'
     

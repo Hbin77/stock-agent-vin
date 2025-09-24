@@ -20,7 +20,7 @@ def run_ensemble_system_for_ticker(ticker):
         print(f"❌ '{ticker}'에 대한 주가 데이터가 없어 시스템을 중단합니다.")
         return
 
-    features_df, _ = builder.add_features_and_target(stock_df.copy())
+    features_df, _ = builder.add_features_and_target(stock_df.copy(), ticker)
     if features_df.empty:
         print(f"❌ '{ticker}' 피처 생성 실패. 데이터가 부족할 수 있습니다.")
         return

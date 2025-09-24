@@ -1,36 +1,33 @@
-# models/trainer.py
+# models/lstm_trainer.py (Final Version)
+
 import numpy as np
-import pandas as pd 
+import pandas as pd
 import os
 import random
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
-from sklearn.metrics import accuracy_score, classification_report
 from imblearn.over_sampling import SMOTE
 from features.builder import create_lstm_dataset
 
+# 재현성을 위한 시드 고정
 seed_value = 42
 os.environ['PYTHONHASHSEED'] = str(seed_value)
 random.seed(seed_value)
 np.random.seed(seed_value)
 tf.random.set_seed(seed_value)
-# ▲▲▲ [수정된 부분] ▲▲▲
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
 
 def train_and_evaluate(df):
-    """SMOTE를 적용하여 LSTM 딥러닝 모델을 생성, 학습하고 평가합니다."""
+    """SMOTE를 적용하여 LSTM 딥러닝 모델을 생성, 학습하고 예측 결과를 반환합니다."""
     print("\n🧠 LSTM 딥러닝 모델 학습을 시작합니다 (SMOTE 적용)...")
     
-    # ▼▼▼ [수정된 부분] 학습에 사용할 피처 목록에 새로운 지표 추가 ▼▼▼
     features = [
         'close', 'RSI_14', 'MACD_12_26_9', 'BBP_20_2.0_2.0', 'OBV', 'OBV_MA10',
-        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3'
+        'ATRr_14', 'STOCHk_14_3_3', 'STOCHd_14_3_3', 'fed_rate', 'usd_krw'
     ]
-    # ▲▲▲ [수정된 부분] ▲▲▲
     target = 'target'
+    
+    features = [f for f in features if f in df.columns]
 
     X = df[features]
     y = df[target]
@@ -40,22 +37,17 @@ def train_and_evaluate(df):
     
     if len(X_seq) == 0:
         print("⚠️ 시퀀스 데이터 생성에 실패했습니다 (데이터 부족).")
-        return None, None, None, None, None, None, None
+        return None
 
     split_index = int(len(X_seq) * 0.8)
     X_train, X_test = X_seq[:split_index], X_seq[split_index:]
     y_train, y_test = y_seq[:split_index], y_seq[split_index:]
     
-    # SMOTE 적용을 위해 훈련 데이터를 2D로 변환
     nsamples, nx, ny = X_train.shape
     X_train_2d = X_train.reshape((nsamples, nx * ny))
     
-    print(f"SMOTE 적용 전 훈련 데이터 클래스 분포: {pd.Series(y_train).value_counts().to_dict()}")
     smote = SMOTE(random_state=42)
     X_train_resampled, y_train_resampled = smote.fit_resample(X_train_2d, y_train)
-    print(f"SMOTE 적용 후 훈련 데이터 클래스 분포: {pd.Series(y_train_resampled).value_counts().to_dict()}")
-    
-    # 다시 LSTM 입력 형태(3D)로 복원
     X_train_resampled = X_train_resampled.reshape((X_train_resampled.shape[0], nx, ny))
     
     model = Sequential([
@@ -68,16 +60,16 @@ def train_and_evaluate(df):
     ])
     
     model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    
-    print("모델 학습을 시작합니다...")
     model.fit(X_train_resampled, y_train_resampled, epochs=25, batch_size=32, validation_data=(X_test, y_test), verbose=0)
     
-    y_pred_proba = model.predict(X_test)
-    y_pred = (y_pred_proba > 0.5).astype(int)
+    print("✅ LSTM 모델 학습 완료!")
     
-    accuracy = accuracy_score(y_test, y_pred)
-    report = classification_report(y_test, y_pred, target_names=['Fail', 'Success'], zero_division=0)
+    # 백테스팅에 사용할 수 있도록 전체 기간에 대한 예측을 생성
+    full_pred_proba = model.predict(X_seq)
+    full_predictions = (full_pred_proba > 0.5).astype(int)
     
-    print("✅ LSTM 모델 학습 및 평가 완료!")
-    test_indices = df.index[split_index + time_steps:]
-    return model, test_indices, y_test, y_pred, accuracy, report, features
+    # 예측 결과는 시퀀스 길이(60일)만큼 앞부분이 비게 되므로, 이를 원본 데이터프레임 길이에 맞게 패딩 추가
+    padding = np.array([np.nan] * (len(df) - len(full_predictions)))
+    
+    # 최종적으로 예측 결과(Series)만 반환
+    return pd.Series(np.concatenate([padding, full_predictions.flatten()]), index=df.index)

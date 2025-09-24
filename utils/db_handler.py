@@ -61,3 +61,15 @@ def load_economic_data():
         finally:
             conn.close()
     return pd.DataFrame()
+
+def get_stock_tickers():
+    """DB에 저장된 모든 활성 주식 티커 목록을 반환합니다."""
+    conn = get_db_connection()
+    if conn:
+        try:
+            sql = "SELECT ticker FROM stock_master WHERE is_active = TRUE ORDER BY ticker;"
+            df = pd.read_sql(sql, conn)
+            return df['ticker'].tolist()
+        finally:
+            conn.close()
+    return []
